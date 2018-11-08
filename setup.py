@@ -1,6 +1,7 @@
 import re
 from setuptools import setup, Command, find_packages
 
+
 def get_requirements():
     req = []
     deps = []
@@ -14,6 +15,7 @@ def get_requirements():
             else:
                 req.append(l)
     return req, deps
+
 
 reqs, deps = get_requirements()
 
