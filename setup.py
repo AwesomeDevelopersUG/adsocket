@@ -1,7 +1,5 @@
 import re
 from setuptools import setup, Command, find_packages
-import os
-from pip.req import parse_requirements
 
 def get_requirements():
     req = []
