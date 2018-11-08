@@ -6,3 +6,4 @@ docs/_build/
 *.py[cod]
 build
 *.egg-info
+adsocket/conf/dev*

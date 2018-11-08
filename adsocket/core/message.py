@@ -13,6 +13,7 @@ class Message:
     kwargs = None
     request_id = None
     _response_data = None
+    _response_id = None
 
     def __init__(self, type, data, request_id=None,
                  channel=None, **kwargs):
@@ -34,7 +35,7 @@ class Message:
         message_data = data.pop('data', None)
         errors = {}
         if not t:
-            errors['type'] = "Can not send message without cmd"
+            errors['type'] = "Can not send message without type"
         if not message_data:
             errors['data'] = "Can not send message without data"
         if not isinstance(data, dict):
@@ -50,8 +51,11 @@ class Message:
             'type': self.type,
             'data': self._response_data or self.data
         }
-        if self.request_id:
+        if self._response_id:
+            data['response_id'] = self._response_id
+        elif self.request_id:
             data['request_id'] = self.request_id
+
         if self.channel:
             data['channel'] = self.channel
         if self.channel_id:
@@ -62,6 +66,8 @@ class Message:
     def set_response(self, data):
         if not self.can_respond():
             return
+
+        self._response_id = self.request_id
         self._response_data = data
 
     def __getitem__(self, key):

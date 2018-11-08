@@ -4,12 +4,11 @@ import logging
 
 from adsocket.core.exceptions import InvalidChannelException, \
     ChannelNotFoundException, PermissionDeniedException
-from adsocket.core.message import Message
-from adsocket.core.permissions import DummyPermission, UserChannelPermission, \
-    CompanyChannelPermission
-from adsocket.core.signals import new_broker_message
-from ..core.utils import import_module
-from .client import Client
+from .message import Message
+from .permissions import DummyPermission
+from .signals import new_broker_message
+from .utils import import_module
+from adsocket.ws.client import Client
 
 _logger = logging.getLogger(__name__)
 
@@ -22,12 +21,14 @@ class Channel:
     _clients = None
 
     permissions = []
-    channel_id = None
+    _channel_id = None
+    _channel_type = None
 
-    def __init__(self, channel_id=None):
-        self._clients = []
+    def __init__(self, channel_type, channel_id=None):
+        self._clients = weakref.WeakSet()
         if channel_id:
-            self.channel_id = channel_id
+            self._channel_id = channel_id
+        self._channel_type = channel_type
 
     def get_permissions(self, client=None):
         permissions = []
@@ -56,20 +57,36 @@ class Channel:
         if not access:
             msg = "You don't have enough permission to join this channel"
             raise PermissionDeniedException(msg)
-        self._clients.append(client)
+        self._clients.add(client)
 
-    async def disconnect(self, client):
-        pass
+    async def leave(self, client):
+        if client in self._clients:
+            self._clients.remove(client)
 
-    async def receive(self):
-        pass
+    @property
+    def channel_id(self):
+        return self._channel_id
+
+    @property
+    def type(self):
+        return self._channel_type
+
+    @property
+    def uid(self):
+        return f"{self._channel_type}:{self._channel_id}"
 
     @property
     def clients(self):
         return self._clients
 
+    def has_client(self, client):
+        return client in self.clients
+
+    def is_empty(self):
+        return not bool(len(self.clients))
+
     def __str__(self):
-        return f"{self.__class__.__name__}:{self.channel_id}"
+        return f"{self.type}:{self.channel_id}"
 
 
 class AdminChannel(Channel):
@@ -83,21 +100,6 @@ class AdminChannel(Channel):
 
     async def _receive_broker_new_message(self, sender, **kwargs):
         await self.publish(kwargs['message'])
-
-
-class UserChannel(Channel):
-
-    permissions = [UserChannelPermission]
-
-
-class CompanyChannel(Channel):
-
-    permissions = [CompanyChannelPermission]
-
-
-class GlobalChannel(Channel):
-    permissions = [DummyPermission]
-    channel_id = "global"
 
 
 class ChannelPool:
@@ -137,14 +139,14 @@ class ChannelPool:
 
     def _initialize_channel(self, channel_type, channel_id):
         """
-        Initialize new instance of channel type and ID
+        Initialize new instance of channel type with given ID
 
         :param str channel_type:
         :param str channel_id:
         :return:
         """
         channel_klazz = self._types[channel_type]
-        channel_instance = channel_klazz(channel_id)
+        channel_instance = channel_klazz(channel_type, channel_id)
         uid = f"{channel_type}:{channel_id}"
         self._channels[uid] = channel_instance
         _logger.info(f"New channel {uid} initialized")
@@ -156,7 +158,25 @@ class ChannelPool:
             b = len(self._permanent_channels)
             msg = f"Channel pool size: {a} | Permanent channel pool size: {b}"
             _logger.info(msg)
-            await asyncio.sleep(30)
+            await asyncio.sleep(10)
+
+    def _get_type_and_id(self, channel):
+        """
+        :param channel:
+        :return:
+        """
+        parts = channel.split(":")
+        if len(parts) != 2:
+            msg = f"Invalid formatted channel channel_id {channel}. " \
+                  f"Try this format 'NAME:ID'"
+            raise InvalidChannelException(msg)
+        return parts[0], parts[1]
+
+    async def client_disconnected(self, client: Client):
+        _logger.debug(f"{client} removed. Let's cleanup channels if possible")
+        for name, channel in self._channels.items():
+            if channel.has_client(client):
+                asyncio.ensure_future(self._schedule_removal(channel))
 
     async def join_channel(self, channel, client: Client, message: Message):
         _logger.info(f"Client {client} joining channel {channel}")
@@ -171,6 +191,7 @@ class ChannelPool:
 
         await channel.join(client, message)
         _logger.info(f"Client {client} has successfully joined {channel}")
+        await client.channel_joined(channel)
         return True
 
     def has_channel(self, channel_type, channel_id):
@@ -197,18 +218,24 @@ class ChannelPool:
     def leave_channel(self, channel, client: Client):
         pass
 
-    def _get_type_and_id(self, channel):
-        """
+    async def leave_channels(self, client: Client):
+        for channel in self._channels:
+            if channel.has_client(client):
+                await channel.leave(client)
+                if len(channel.clients) == 0:
+                    asyncio.ensure_future(self._schedule_removal(channel))
 
-        :param channel:
-        :return:
-        """
-        parts = channel.split(":")
-        if len(parts) != 2:
-            msg = f"Invalid formatted channel channel_id {channel}. " \
-                  f"Try this format 'NAME:ID'"
-            raise InvalidChannelException(msg)
-        return parts[0], parts[1]
+    async def _schedule_removal(self, channel: Channel):
+        await asyncio.sleep(12)
+        if channel.is_empty():
+            await self.remove_channel(channel)
+
+    async def remove_channel(self, channel: Channel):
+        if channel.uid in self._channels:
+            del self._channels[channel.uid]
+
+            _logger.info(f"Channel {channel} have been removed")
+            return
 
     async def publish(self, message):
         """
@@ -227,13 +254,18 @@ class ChannelPool:
 
 async def initialize_channels(app):
     """
-    Initialize channels by type. Import class from klazz string given in settings
+    Initialize channels by type. Import class from
+    klazz string given in settings
 
     :param app:
     :return:
     """
-    if not app['settings'].CHANNELS:
+    if not hasattr(app['settings'], 'CHANNELS') or not \
+            isinstance(app['settings'].CHANNELS, dict):
         raise RuntimeError("Improperly configured")
+
+    if not len(app['settings'].CHANNELS):
+        _logger.warning("Without channels there is not much to do :(")
     types = {}
     permanent_channels = {}
     for name, options in app['settings'].CHANNELS.items():
@@ -243,12 +275,10 @@ async def initialize_channels(app):
         klazz = import_module(driver)
         create_on_startup = options.pop('create_on_startup', False)
         if create_on_startup:
+            options['channel_type'] = name
             permanent_channels[name] = klazz(**options)
         else:
             types[name] = klazz
-
-    if len(types) == 0 or len(permanent_channels) == 0:
-        raise RuntimeError("Sorry.. I cannot work without channels")
 
     app['channels'] = ChannelPool(channel_types=types,
                                   permanent_channels=permanent_channels,

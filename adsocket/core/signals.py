@@ -41,12 +41,6 @@ class Signal:
         """
         for r in self._receivers:
             receiver, lookup_key = r
-            # print("What do we have here")
-            # print(r)
-            # print(r[0])
-            # print(r[1])
-            # print(_make_id(sender))
-            # print(r_sender)
             if _make_id(sender) == lookup_key[1]:
                 asyncio.ensure_future(receiver(sender=sender, **kwargs))
 

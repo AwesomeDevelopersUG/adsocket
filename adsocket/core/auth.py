@@ -8,14 +8,23 @@ from adsocket.core.utils import import_module
 
 
 class AbstractAuth(ABC):
-
+    """
+    Abstract Authenticator must be base subclass for every custom
+    authentication class
+    """
     _app = None
 
     def __init__(self, app):
         self._app = app
 
+    @abstractmethod
     async def authenticate(self, client, message):
-        pass
+        """
+
+        :param client:
+        :param message:
+        :return:
+        """
 
 
 class UsernamePasswordAuth(AbstractAuth):
@@ -31,21 +40,6 @@ class UsernamePasswordAuth(AbstractAuth):
             if result is True:
                 return result, {}
         return False, None
-
-
-class ZeenrAuth(AbstractAuth):
-
-    async def authenticate(self, client, message):
-
-        try:
-            token = message.data.get('token')
-            data = await self._app['redis'].execute('get', token)
-        except RedisError:
-            raise AuthenticationException()
-        if not data:
-            return False, None
-        else:
-            return True, data
 
 
 async def initialize_authentication(app):

@@ -1,16 +1,11 @@
 import os
 
-DEBUG = True
+DEBUG = False
 """
 Enable or disable debug mode
 """
 
 PORT = 5005
-#
-# ZEENR_API_URL = 'http://zeenr.com/api'
-# ZEENR_API_VERSION = 1
-#
-# SECRET_KEY = "(utc+*0jrzg*+slkx1gx2@&4j&)v^*#n-j(5uez_t=h20h@fun"
 
 LOGGING = {
     'version': 1,
@@ -42,32 +37,14 @@ LOGGING = {
 
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
-EXECUTOR_POOL_SIZE = 2
-
 SECURE_PROXY_SSL_HEADER = ('X-Forwarded-Proto', 'https')
 
 
 CHANNELS = {
-    'events': {
-        'driver': 'adsocket.ws.channels.Channel',
+    'ping': {
+        'driver': 'adsocket.core.channels.Channel',
         'on_startup': False,
     },
-    'admin': {
-        'driver': 'adsocket.ws.channels.AdminChannel',
-        'create_on_startup': True,  # create one instance on application startup
-    },
-    'global': {
-        'driver': 'adsocket.ws.channels.GlobalChannel',
-        'create_on_startup': True,
-    },
-    'user': {
-        'driver': 'adsocket.ws.channels.UserChannel',
-        'create_on_startup': False,
-    },
-    'company': {
-        'driver': 'adsocket.ws.channels.CompanyChannel',
-        'create_on_startup': False,
-    }
 }
 
 WEBSOCKET_ACTIONS = (
@@ -75,9 +52,6 @@ WEBSOCKET_ACTIONS = (
     ('subscribe', 'adsocket.ws.actions.JoinAction')
 )
 
-WEBSOCKET_CHANNELS = (
-    ()
-)
 
 REDIS_HOST = 'redis://127.0.0.1'
 REDIS_DB = 0
@@ -88,11 +62,9 @@ BROKER = {
     'driver': 'adsocket.core.broker.redis.RedisBroker',
     'host': REDIS_HOST,
     'db': REDIS_DB,
-    'channels': ['zeenr_ws']
+    'channels': ['adsocket']
 }
 
-AUTHENTICATION_CLASSES = (
-    'adsocket.core.auth.ZeenrAuth',
-)
+AUTHENTICATION_CLASSES = []
 
-DISCONNECT_UNAUTHENTICATED = 30
+DISCONNECT_UNAUTHENTICATED = False

@@ -2,18 +2,21 @@ import abc
 
 
 class Permission(abc.ABC):
+    """
+    Base permission class. All other permission must instances of this class
+    """
 
-    # @abc.abstractmethod
     async def can_join(self, channel, client, message):
         pass
 
-    # @abc.abstractmethod
     async def can_write(self, channel, client, message):
         pass
 
 
 class DummyPermission(Permission):
-
+    """
+    Dummy permission simply answer to all calls True
+    """
     async def can_join(self, channel, client, message):
         return True
 
@@ -21,21 +24,9 @@ class DummyPermission(Permission):
         return True
 
 
-class UserChannelPermission(Permission):
-
+class IsAuthenticatedPermission(Permission):
+    """
+    Check whether client is authenticated.. nothing else
+    """
     async def can_join(self, channel, client, message):
-
-        if not client.profile['id']:
-            return False
-
-        return client.profile['id'] == message.channel_id
-
-
-class CompanyChannelPermission(Permission):
-
-    async def can_join(self, channel, client, message):
-
-        if not client.profile['id'] or not client.profile['company_id']:
-            return False
-
-        return client.profile['company_id'] == message.channel_id
+        return client.is_authenticated()

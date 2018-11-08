@@ -34,3 +34,8 @@ class CommandNotFoundException(CommandException):
 
 class CommandExecuteError(CommandException):
     message = "Command execute error"
+
+
+class ClientException(ADSocketException):
+    message = "Client error"
+

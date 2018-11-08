@@ -1,16 +1,23 @@
 import re
-from setuptools import setup, Command
+from setuptools import setup, Command, find_packages
 import os
 from pip.req import parse_requirements
 
-
 def get_requirements():
-    pth = os.path.join(os.path.dirname(__file__), 'REQUIREMENTS')
-    install_reqs = parse_requirements(pth, session='setup_hack')
-    res = [str(ir.req) for ir in install_reqs
-            if str(ir.req) != "None"]
-    return res
+    req = []
+    deps = []
+    with open("REQUIREMENTS", "r") as f:
+        for l in  f.readlines():
+            l = l.strip()
+            if l.startswith("#"):
+                continue
+            elif l.startswith("git+"):
+                deps.append(l)
+            else:
+                req.append(l)
+    return req, deps
 
+reqs, deps = get_requirements()
 
 with open('adsocket/version.py', 'r') as fd:
     version = re.search(r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]',
@@ -45,12 +52,18 @@ setup(
     cmdclass={
         'tc_version': TeamCityVersionCommand
     },
-    install_requires=get_requirements(),
-    packages=['adsocket'],
+    install_requires=reqs,
+    dependency_links=deps,
+    packages=find_packages(),
     zip_safe=True,
     include_package_data=True,
     platforms='any',
     license='MIT',
     description="Websocket protocol",
-    version=version
+    version=version,
+    entry_points={
+        'console_scripts': [
+            'adsocket=adsocket.server:run_loop'
+        ]
+    }
 )

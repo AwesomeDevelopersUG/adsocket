@@ -2,7 +2,7 @@ import logging
 
 from adsocket.core.commands.exceptions import CommandNotFoundException
 from .commands import AbstractCommand, AuthenticateCommand, \
-    SubscribeCommand, PublishCommand
+    SubscribeCommand, PublishCommand, PingCommand
 
 __all__ = [
     'Commander',
@@ -64,3 +64,4 @@ commander = Commander()
 commander.register('authenticate', AuthenticateCommand)
 commander.register('subscribe', SubscribeCommand)
 commander.register('publish', PublishCommand)
+commander.register('ping', PingCommand)

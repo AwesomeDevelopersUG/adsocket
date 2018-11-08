@@ -7,6 +7,7 @@ from . import default_settings
 
 _logger = logging.getLogger(__name__)
 
+
 class Expando:
     """
     A simple expando class to be used as a container for attributes
@@ -29,11 +30,10 @@ class Expando:
         return self._vals.get(item, default)
 
 
-
 def load_settings():
     """
     This will load the application defaults first and then set custom settings,
-    if the `ZEENR_SETTINGS` environment variable is set and pointing to a
+    if the `ADSOCKET_SETTINGS` environment variable is set and pointing to a
     importable Python module
 
     :return sraps.core.Expando: The combined setting object instance
@@ -64,11 +64,11 @@ def load_settings():
     result = load_module(default_settings, result)
 
     # Try to lookup custom settings file
-    if environ.get('ZEENR_SETTINGS') is not None:
+    if environ.get('ADSOCKET_SETTINGS') is not None:
         try:
             _logger.info("Using settings: {}".format(
-                environ.get('ZEENR_SETTINGS')))
-            mod = importlib.import_module(environ.get('ZEENR_SETTINGS'))
+                environ.get('ADSOCKET_SETTINGS')))
+            mod = importlib.import_module(environ.get('ADSOCKET_SETTINGS'))
             result = load_module(mod, result)
         except ImportError as e:
             msg = "Could not import the settings file: {}".format(e)

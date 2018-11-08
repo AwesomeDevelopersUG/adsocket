@@ -2,17 +2,24 @@ import asyncio
 from aiohttp import web
 import aioredis
 
-from adsocket.core.logging_setup import setup_logging
+from .logging_setup import setup_logging
 from adsocket.ws import ws_handler, http_handler
 from adsocket import conf, banner
-from adsocket.core.broker import load_broker
-from adsocket.core.auth import initialize_authentication
-from adsocket.ws.channels import initialize_channels
-from adsocket.ws.client import ClientPool
-from adsocket.core.commands import commander
+from .broker import load_broker
+from .auth import initialize_authentication
+from .channels import initialize_channels
+from ..ws.client import ClientPool
+from .commands import commander
 
 
 async def _initialize_redis(app):
+    """
+    This is actually hack. Once I have time I'll move it to somewhere
+    else ot even delete it
+
+    :param aiohttp.web.Application app: Application instance
+    :return aiohttp.web.Application: Application instance
+    """
     settings = app['settings']
     pool = await aioredis.create_pool(
         settings.REDIS_HOST,
@@ -32,7 +39,7 @@ async def _on_shutdown(app):
     await app['broker'].close(app)
     await app['client_pool'].shutdown(app)
     app['redis'].close()
-    app['redis'].wait_closed()
+    await app['redis'].wait_closed()
 
 
 def factory(loop):
@@ -44,7 +51,6 @@ def factory(loop):
         debug=settings.DEBUG,
     )
 
-    # app['settings'] = conf.app_settings
     app['settings'] = settings
     app['loop'] = loop
     app.router.add_get('/ws', ws_handler)
