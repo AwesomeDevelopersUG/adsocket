@@ -4,6 +4,7 @@ import aioredis
 
 from .logging_setup import setup_logging
 from adsocket.ws import ws_handler, http_handler
+from adsocket.http import ping_handler
 from adsocket import conf, banner
 from .broker import load_broker
 from .auth import initialize_authentication
@@ -53,8 +54,11 @@ def factory(loop):
 
     app['settings'] = settings
     app['loop'] = loop
+    # Backward compatibility only
     app.router.add_get('/ws', ws_handler)
-    app.router.add_get('/poll', http_handler)
+    # This is intended
+    app.router.add_get('/', ws_handler)
+    app.router.add_get('/_ping', ping_handler)
     setup_logging(app['settings'].LOGGING)
     app['client_pool'] = ClientPool(app)
     asyncio.ensure_future(load_broker(app))
