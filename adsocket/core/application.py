@@ -24,6 +24,7 @@ async def _initialize_redis(app):
     settings = app['settings']
     pool = await aioredis.create_pool(
         settings.REDIS_HOST,
+        db=settings.REDIS_DB,
         minsize=settings.REDIS_MIN_POOL_SIZE,
         maxsize=settings.REDIS_MAX_POOL_SIZE,
         loop=app['loop'])

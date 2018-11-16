@@ -1,10 +1,12 @@
+import logging
 from abc import ABC, abstractmethod
-
 from aioredis import RedisError
 
 from adsocket.core.exceptions import AuthenticationException
 from adsocket.core.message import Message
 from adsocket.core.utils import import_module
+
+_logger = logging.getLogger(__name__)
 
 
 class AbstractAuth(ABC):
@@ -43,10 +45,17 @@ class UsernamePasswordAuth(AbstractAuth):
 
 
 async def initialize_authentication(app):
+    _logger.info("Registering authentication classes")
     if not app['settings'].AUTHENTICATION_CLASSES:
+        _logger.warning("No Authentication classes found")
         return
 
     app['authenticators'] = []
     for auth_class in app['settings'].AUTHENTICATION_CLASSES:
         auth = import_module(auth_class)
+        if not issubclass(auth, AbstractAuth):
+            _logger.error(f"Class {auth} must be subclass "
+                          f"of AbstractAuth")
         app['authenticators'].append(auth(app))
+        _logger.info(f"Authenticator '{auth.__name__}' registered")
+    _logger.info("Authentication classes registered")
