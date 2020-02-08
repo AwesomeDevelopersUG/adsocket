@@ -47,7 +47,7 @@ class UsernamePasswordAuth(AbstractAuth):
 async def initialize_authentication(app):
     _logger.info("Registering authentication classes")
     if not app['settings'].AUTHENTICATION_CLASSES:
-        _logger.warning("No Authentication classes found")
+        _logger.info("No Authentication classes found")
         return
 
     app['authenticators'] = []

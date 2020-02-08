@@ -122,7 +122,7 @@ class ClientPool:
 
     async def _schedule_for_disconnect(self, client: Client):
         """
-        Unauthicated users should be disconnected after while
+        Unauthenticated users should be disconnected after while
 
         :param client:
         :return:

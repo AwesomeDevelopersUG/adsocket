@@ -1,12 +1,26 @@
+import logging
 from abc import ABC, abstractmethod
 import asyncio
 from adsocket.core.utils import import_module
 from adsocket.core.message import Message
+from adsocket.core.exceptions import InvalidChannelException, ChannelNotFoundException
+
+_logger = logging.getLogger(__name__)
 
 
 class Broker(ABC):
 
     _app = None
+
+    async def ventilate(self, message: Message):
+        try:
+            await self.app['channels'].publish(message)
+        except InvalidChannelException as e:
+            msg = f"Received invalid channel type from Broker: " \
+                  f"{message.channel}"
+            _logger.error(msg)
+        except ChannelNotFoundException:
+            pass
 
     @abstractmethod
     def read(self):

@@ -5,7 +5,6 @@ import logging
 from aioredis.pubsub import Receiver
 import aioredis
 
-from adsocket.core.exceptions import InvalidChannelException, ChannelNotFoundException
 from adsocket.core.signals import new_broker_message
 from . import Broker
 from adsocket.core.message import Message
@@ -69,16 +68,6 @@ class RedisBroker(Broker):
 
     async def write(self, message):
         pass
-
-    async def ventilate(self, message: Message):
-        try:
-            await self.app['channels'].publish(message)
-        except InvalidChannelException as e:
-            msg = f"Received invalid channel type from Broker: " \
-                  f"{message.channel}"
-            _logger.error(msg)
-        except ChannelNotFoundException:
-            pass
 
     async def close(self, app):
         redis = await self.redis

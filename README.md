@@ -1,6 +1,7 @@
 #ADSocket
 
-WebSocket protocol based on [aiohttp](https://github.com/aio-libs/aiohttp).
+WebSocket server based on [aiohttp](https://github.com/aio-libs/aiohttp).
+
 
 ## Install
 
@@ -10,11 +11,24 @@ Using python package
 pip install adsocket
 ```
 
+## Documentation
+
+## Goals
+Out motivation to behind is follows:
+ * High scalability
+ * High performance
+ * Easy customization
+ * Easy extendability
+
 ## How does it work
 
-### Custom channels
+### Channels
 
-### Custom command
+#### Custom channels
 
-## Documentation
+### Commands
+
+#### Custom command
+
+
 

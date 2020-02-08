@@ -46,11 +46,8 @@ class Channel:
         return True
 
     async def publish(self, msg: Message):
-        for client in self._clients:
-            try:
-                await client.message(msg)
-            except Exception as e:
-                _logger.error(f"Couldn't send message {msg} to client {client}")
+        return await asyncio.gather(
+            [client.message(msg) for client in self.clients])
 
     async def join(self, client: Client, message: Message) -> None:
         access = await self._check_permissions(client, message)
@@ -106,7 +103,7 @@ class ChannelPool:
 
     _channels = None
     _types = {}
-    
+
     def __init__(self, *args, **kwargs):
         self._types = kwargs.pop('channel_types', {})
         permanent_channels = kwargs.pop('permanent_channels', {})

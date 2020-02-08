@@ -4,7 +4,7 @@ import aioredis
 
 from .logging_setup import setup_logging
 from adsocket.ws import ws_handler, http_handler
-from adsocket.http import ping_handler
+from adsocket.http_handlers import ping_handler
 from adsocket import conf, banner
 from .broker import load_broker
 from .auth import initialize_authentication
@@ -16,7 +16,7 @@ from .commands import commander
 async def _initialize_redis(app):
     """
     This is actually hack. Once I have time I'll move it to somewhere
-    else ot even delete it
+    else or maybe even delete it
 
     :param aiohttp.web.Application app: Application instance
     :return aiohttp.web.Application: Application instance
@@ -29,7 +29,6 @@ async def _initialize_redis(app):
         maxsize=settings.REDIS_MAX_POOL_SIZE,
         loop=app['loop'])
     app['redis'] = pool
-    return app
 
 
 async def _on_shutdown(app):
@@ -65,7 +64,7 @@ def factory(loop):
     asyncio.ensure_future(load_broker(app))
     asyncio.ensure_future(initialize_channels(app))
     asyncio.ensure_future(initialize_authentication(app))
-    asyncio.ensure_future(_initialize_redis(app))
+    loop.run_until_complete(_initialize_redis(app))
     app.on_shutdown.append(_on_shutdown)
     # we also need commander to have control over the commands
     commander.set_app(app)
