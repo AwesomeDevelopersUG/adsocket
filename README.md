@@ -1,4 +1,4 @@
-#ADSocket
+# ADSocket
 
 WebSocket server based on [aiohttp](https://github.com/aio-libs/aiohttp).
 
