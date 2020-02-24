@@ -47,7 +47,7 @@ class Channel:
 
     async def publish(self, msg: Message):
         return await asyncio.gather(
-            [client.message(msg) for client in self.clients])
+            *[client.message(msg) for client in self.clients])
 
     async def join(self, client: Client, message: Message) -> None:
         access = await self._check_permissions(client, message)
